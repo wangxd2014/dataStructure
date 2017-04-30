@@ -1,0 +1,151 @@
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <algorithm>
+#include <cstring>
+#include <vector>
+#include <bitset>
+#include <list>
+#include <tr1/unordered_map>
+#include <map>
+using namespace std;
+using namespace std::tr1;
+/*
+  1.hashtable的链式实现 
+  2.用链式实现来解答如下题目:
+   给定义个target，一个数组，那么求数组是否存在两个数，其和为target，返回相对应的下标。 
+
+ 3.这里并没有取小于size的最大素数 
+ 
+ 4.链表法还是太慢，基本和库函数耗费一样 
+ 
+*/
+
+/*
+  1.我曾经很害怕的东西竟然不到70行代码就能解决，可见之前的我真的是太渣了，太容易逃避了 
+*/
+
+struct HashNode{
+	int key;
+	int val;
+	struct HashNode *next;
+	HashNode():key(0),val(0),next(NULL){ };  // 使用未初始化的变量是罪恶的源泉 
+};
+
+struct HashMap{
+	int size;
+	HashNode **storage;
+	HashMap():size(0),storage(NULL){ };
+};
+
+void Hash_create(HashMap *hashmap,int size);
+void Hash_insert(HashMap *hashmap,int key,int val);
+HashNode* Hash_find(HashMap *hashmap,int key);
+void Hash_free(HashMap *hashmap); 
+
+
+void Hash_create(HashMap *hashmap,int size){
+	hashmap->size=size;
+	hashmap->storage=(HashNode **)calloc(size,sizeof(HashNode*));
+}
+
+void Hash_insert(HashMap *hashmap,int key,int val){
+	int k=abs(key)%hashmap->size;
+	HashNode *node=(HashNode *)malloc(sizeof(HashNode));
+	node->key=key;
+	node->val=val;
+	node->next=hashmap->storage[k]; // 采用的是头插法 
+	hashmap->storage[k]=node;
+}
+
+HashNode* Hash_find(HashMap *hashmap,int key){
+	int k=abs(key)%hashmap->size;
+	HashNode *node=hashmap->storage[k];
+	while(node){
+		if(node->key==key)
+			break;
+		node=node->next;
+	}
+	return node;
+}
+
+void Hash_free(HashMap *hashmap){
+	HashNode *p=NULL;
+	for(size_t i=0;i<hashmap->size;++i){ // 头插法尾插法都不好free 
+		p=hashmap->storage[i];
+		while(p){
+			hashmap->storage[i]=p->next; 
+			free(p);
+			p=hashmap->storage[i];
+		} 
+	}
+	free(hashmap->storage); 
+}
+
+int main(){
+	int nums[4]={2,7,11,14};
+	//int nums[4]={0,4,3,0};
+	int target=9;
+	int size=4;
+	HashMap *pHead=(HashMap*)malloc(sizeof(HashMap));
+	Hash_create(pHead,2*size-1); //这里的size/(2*size-1) 是装载因子 
+	for(int i=0;i<size;++i){
+		int res = target - nums[i];
+		HashNode *p=Hash_find(pHead,res);
+		if(p){
+			printf("the result is (location,key): (%d,%d),(%d,%d)\n",i,nums[i],p->val,p->key);
+			break;
+		}else{
+			Hash_insert(pHead,nums[i],i);
+		}
+	}
+	
+	Hash_free(pHead); 
+	free(pHead);
+	cout<<"实验2：hash表调用库函数"<<endl; //#include <tr1/unordered_map>
+	/* 使用到了如下函数：
+	   hmap.find()   // 
+	   hmap[x]=y;   // 建立x和y之间的联系 
+	*/
+	
+	unordered_map<int,int> hmap;
+	unordered_map<int,int>::iterator is;
+	for(int i=0;i<size;++i){
+		int res=target-nums[i];
+		is=hmap.find(res);
+		if( hmap.find(res)!=hmap.end()){
+			printf("the result is (location,key): (%d,%d),(%d,%d)\n",i,nums[i],is->second,res);
+		}else{
+			//hmap[nums[i]]=i;
+			hmap.insert(make_pair(nums[i],i)); 
+		}
+		
+	}
+	
+	
+	cout<<"实验3：使用map库函数"<<endl;
+	/*
+		1. hmap1.find() 函数 其返回一个迭代器it，但这个迭代器是一个pair类型，不是pari->first 是key，pair->second才是存储的值 
+		2. hmap1.insert(it)  it是pair配型 
+		3.使用了make_pari函数 
+	*/ 
+	map<int,int> hmap1;
+	map<int,int>::iterator it;
+	for(int i=0;i<size;++i){
+		int res= target- nums[i];
+		it=hmap1.find(res);
+		if(hmap1.find(res)!=hmap1.end()){
+			printf("the result is (location,key): (%d,%d),(%d,%d)\n",i,nums[i],it->second,res); //first 是键值key，第二个才是下标值 
+		}else{
+			hmap1.insert(make_pair(nums[i],i));
+		}
+	} 
+	return 0;
+} 
+
+
+
+
+
+
+
